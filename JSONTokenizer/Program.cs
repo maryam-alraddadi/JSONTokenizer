@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
+using JSONTokenizer.Handlers;
 
 namespace JSONTokenizer
 {
@@ -11,64 +11,63 @@ namespace JSONTokenizer
         private readonly int length;
         private int position;
         private int lineNumber;
-        //Properties
         public int Length
         {
             get
             {
-                return this.length;
+                return length;
             }
         }
         public int Position
         {
             get
             {
-                return this.position;
+                return position;
             }
         }
         public int NextPosition
         {
             get
             {
-                return this.position + 1;
+                return position + 1;
             }
         }
         public int LineNumber
         {
             get
             {
-                return this.lineNumber;
+                return lineNumber;
             }
         }
         public char Character
         {
             get
             {
-                if (this.position > -1) return this.input[this.position];
-                else return '\0';
+                if (position > -1) return input[position];
+                return '\0';
             }
         }
         public Input(string input)
         {
             this.input = input;
-            this.length = input.Length;
-            this.position = -1;
-            this.lineNumber = 1;
+            length = input.Length;
+            position = -1;
+            lineNumber = 1;
         }
         public bool hasMore(int numOfSteps = 1)
         {
             if (numOfSteps <= 0) throw new Exception("Invalid number of steps");
-            return (this.position + numOfSteps) < this.length;
+            return (position + numOfSteps) < length;
         }
         public bool hasLess(int numOfSteps = 1)
         {
             if (numOfSteps <= 0) throw new Exception("Invalid number of steps");
-            return (this.position - numOfSteps) > -1;
+            return (position - numOfSteps) > -1;
         }
         public Input step(int numOfSteps = 1)
         {
-            if (this.hasMore(numOfSteps))
-                this.position += numOfSteps;
+            if (hasMore(numOfSteps))
+                position += numOfSteps;
             else
             {
                 throw new Exception("There is no more step");
@@ -77,34 +76,32 @@ namespace JSONTokenizer
         }
         public Input back(int numOfSteps = 1)
         {
-            if (this.hasLess(numOfSteps))
-                this.position -= numOfSteps;
+            if (hasLess(numOfSteps))
+                position -= numOfSteps;
             else
             {
                 throw new Exception("There is no more step");
             }
             return this;
         }
-        public Input reset() { return this; }
         public char peek(int numOfSteps = 1) {
-            if (this.hasMore(numOfSteps)) return this.input[this.Position + numOfSteps];
+            if (hasMore(numOfSteps)) return input[Position + numOfSteps];
             return '\0';
         }
         
         public char peekBack(int numOfSteps = 1)
         {
-            if (this.hasLess(numOfSteps))
+            if (hasLess(numOfSteps))
             {
-                return this.input[this.Position + 1 - numOfSteps];
+                return input[Position + 1 - numOfSteps];
             }
 
             return '\0';
-            //throw new Exception("There is no more step");
         }
         public string loop(InputCondition condition) {
             string buffer = "";
-            while (this.hasMore() && condition(this))
-                buffer += this.step().Character;
+            while (hasMore() && condition(this))
+                buffer += step().Character;
             return buffer;
         }
     }
@@ -114,10 +111,10 @@ namespace JSONTokenizer
         public string Type { set; get; }
         public string Value { set; get; }
         public Token(int position, int lineNumber, string type, string value) {
-            this.Position = position;
-            this.LineNumber = lineNumber;
-            this.Type = type;
-            this.Value = value;
+            Position = position;
+            LineNumber = lineNumber;
+            Type = type;
+            Value = value;
         }
     }
     public abstract class Tokenizable
@@ -126,184 +123,74 @@ namespace JSONTokenizer
         public abstract Token tokenize(Tokenizer tokenizer);
     }
     public class Tokenizer {
-        //public List<Token> tokens;
         public Input input;
         public Tokenizable[] handlers;
         public Tokenizer(string source, Tokenizable[] handlers) {
-            this.input = new Input(source);
+            input = new Input(source);
             this.handlers = handlers;
         }
         public Tokenizer(Input source, Tokenizable[] handlers) {
-            this.input = source;
+            input = source;
             this.handlers = handlers;
         }
         public Token tokenize() {
             
-            foreach (var handler in this.handlers)
+            foreach (var handler in handlers)
                 if (handler.tokenizable(this)) return handler.tokenize(this);
             return null;
         }
-    }
-    public class IdTokenizer : Tokenizable
-    {
-        private List<string> keywords;
-        public IdTokenizer(List<string> keywords)
-        {
-            this.keywords = keywords;
-        }
-        public override bool tokenizable(Tokenizer t)
-        {
-            char currentCharacter = t.input.peek();
-            //Console.WriteLine(currentCharacter);
-            return Char.IsLetter(currentCharacter) || currentCharacter == '_';
-        }
-        static bool isId(Input input)
-        {
-            char currentCharacter = input.peek();
-            return Char.IsLetterOrDigit(currentCharacter) || currentCharacter == '_';
-        }
-        public override Token tokenize(Tokenizer t)
-        { 
-            return new Token(t.input.Position, t.input.LineNumber,
-                "identifier", t.input.loop(isId));
-        }
-    }
-
-    public class IsWhiteSpace : Tokenizable
-    {
-        public override bool tokenizable(Tokenizer t)
-        {
-            char currentCharacter = t.input.peek();
-            return Char.IsWhiteSpace(currentCharacter);
-        }
-
-        static bool IsSpace(Input input)
-        {
-            char currentCharacter = input.peek();
-            return Char.IsWhiteSpace(currentCharacter);
-        }
-
-        static bool IsLineFeed(Input input)
-        {
-            char currentCharacter = input.peek();
-            if (currentCharacter.Equals('\n')) return true;
-            else return false;
-        }
-
-        static bool carriageReutrn(Input input)
-        {
-            char currentCharacter = input.peek();
-            if (currentCharacter.Equals('\r')) return true;
-            else return false;
-        }
-
-        static bool HorizentlTab(Input input)
-        {
-            char currentCharacter = input.peek();
-            if (currentCharacter.Equals('\t')) return true;
-            else return false;
-        }
-
-        public override Token tokenize(Tokenizer t)
-        {
-            Token token = new Token(t.input.Position, t.input.LineNumber,
-                "whitespppppppace", t.input.loop(IsSpace));
-            InputCondition[] i = {IsSpace, HorizentlTab, carriageReutrn, IsLineFeed};
-            foreach (var conditon in i)
-            {
-                token.Value += t.input.loop(conditon);
-            }
-
-            return token;
-        }
-    }
-
-
-    public class NumberTokenizer : Tokenizable
-    {
-        public override bool tokenizable(Tokenizer t)
-        {
-            char currentCharacter = t.input.peek();
-            char nextCharacter = t.input.peek(2);
-            return IsOneNineDigit(currentCharacter) || 
-                   (currentCharacter == '0' && nextCharacter =='.') ||
-                   (currentCharacter == '-' && Char.IsDigit(nextCharacter));
-        }
-
-        public override Token tokenize(Tokenizer t)
-        {
-            InputCondition[] i = {IsDigit, IsFraction, IsNegative, IsExponent, IsExponentSigned};
-            Token token = new Token(t.input.Position, t.input.LineNumber,
-                "number", "");
-            int k = 0;
-            while (k < t.input.Length)
-            {
-                foreach (var condition in i)
-                {
-                    token.Value += t.input.loop(condition);
-                    //Console.WriteLine(token.Value);
-                    //if value has more than one . e + - throw exception
-                }
-                k++;
-            }
-            
-            return token;
-        }
-
-        static bool IsOneNineDigit(char character)
-        {
-            return (character >= '1' && character <= '9');
-        }
-
-        static bool IsDigit(Input input)
-        {
-            return Char.IsDigit(input.peek());
-        }
-
-        static bool IsFraction(Input input)
-        {
-            return input.peek() == '.' && Char.IsDigit(input.peek(2));
-        }
-
-        static bool IsNegative(Input input)
-        {
-            return input.peek() == '-' && Char.IsDigit(input.peek(2));
-        }
-
-        static bool IsExponent(Input input)
-        {
-            char currentCharacter = input.peek();
-            char nextCharacter = input.peek(2);
-            return (currentCharacter == 'e' || currentCharacter == 'E') &&
-                   (Char.IsDigit(nextCharacter) || nextCharacter == '+' ||
-                    nextCharacter == '-');
-        }
-
-        static bool IsExponentSigned(Input input)
-        {
-            char currentCharacter = input.peek();
-            char nextCharacter = input.peek(2);
-            char previousCharacter = input.peekBack();
-            return ((currentCharacter == '+' || currentCharacter == '-') &&
-                    (previousCharacter == 'e' || previousCharacter == 'E')
-                    && Char.IsDigit(input.peek(2)));
-        }
-    }
+     }
 
     class Program
     {
         static void Main(string[] args)
         {
-            Tokenizer t = new Tokenizer(new Input("-4353 033 1.1 0.43 55.6E-2 1.33e99 34543.45 1.4342 114.1"), new Tokenizable[] {
-                new IsWhiteSpace(),
-                new NumberTokenizer()
-            }); ;
+            string json =
+                @"{""k1"": ""   "",""k2"": ""fdfsf"",""k3"" : {""gg"": ""dd""},""k4"": ""fdsd"", ""k5"": [4.4,-645]";
+            Tokenizer t = new Tokenizer(new Input(json), new Tokenizable[]
+            {
+                new JsonCharactersTokenizer(),
+                new StringTokenizer(),
+                new WhiteSpaceTokenizer(),
+                new NumberTokenizer(),
+                new KeywordsTokenizer()
+            });
+
             Token token = t.tokenize();
             while (token != null)
             {
-                Console.WriteLine($"value: {token.Value}            type: {token.Type}");
+                Console.WriteLine($"value: {token.Value}        type: {token.Type}");
                 token = t.tokenize();
             }
+            //JSON s = new JSON(new Input(json));
+            //JSON s = new JSON(new Input(@"{""firsttest"":""firstvalue"",""sec"":""secondvalue""}"));
+            //JObject l = s.ParseObject();
+            // foreach (var value in l.values)
+            // {
+            //     if (value.value is JArray)
+            //     {
+            //         JArray arr = (JArray) value.value;
+            //         Console.WriteLine($"array length {arr.values.Count}");
+            //         foreach (var i in arr.values)
+            //         {
+            //             Console.WriteLine(i);
+            //         }
+            //     }
+            //
+            //     if (value.value is JObject)
+            //     {
+            //         JObject obj = (JObject) value.value;
+            //         foreach (var j in obj.values)
+            //         {
+            //             Console.WriteLine($"nested  key: {j.key}        value: {j.value}");
+            //         }
+            //     }
+            //     
+            //     Console.WriteLine($"key: {value.key}        value: {value.value}");
+            //  
+            // }
+            
+            
         }
     }
 }
