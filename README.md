@@ -1,8 +1,4 @@
-# JSONTokenizer
 
-​
-  
-  
 ​
   
 ​
@@ -12,7 +8,7 @@
 ​
 # JSON Token project
 ​
-<img  src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/JSON_vector_logo.svg/1200px-JSON_vector_logo.svg.png"  width="300"  height="300">
+<img  src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/JSON_vector_logo.svg/1200px-JSON_vector_logo.svg.png"  width="150"  height="150">
 ​
   
 ​
@@ -47,7 +43,7 @@
 ​
 ## تم عمل الـ JSON Tokenمن قبل المتدربين :
 ​
-- فاطمه القحطاني
+- قائد الفريق :فاطمه القحطاني 
 ​
 - مريم الردراي
 ​
